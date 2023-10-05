@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,10 +22,12 @@ import androidx.fragment.app.Fragment;
 import com.example.coolweather.db.City;
 import com.example.coolweather.db.County;
 import com.example.coolweather.db.Province;
+import com.example.coolweather.gson.Weather;
 import com.example.coolweather.util.HttpUtil;
 import com.example.coolweather.util.Utility;
 
-import org.litepal.crud.DataSupport;
+import org.litepal.LitePal;
+import org.litepal.util.Const;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -77,10 +80,17 @@ public class ChooseAreaFragment extends Fragment {
                 }
                 else if(currentLevel == LEVEL_COUNTY){
                     String weatherId = countyList.get(i).getWeatherId();
-                    Intent intent = new Intent(getActivity(),WeatherActivity.class);
-                    intent.putExtra("weather_id",weatherId);
-                    startActivity(intent);
-                    getActivity().finish();
+                    if(getActivity() instanceof MainActivity){
+                        Intent intent = new Intent(getActivity(),WeatherActivity.class);
+                        intent.putExtra("weather_id",weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    }else if(getActivity() instanceof WeatherActivity){
+                        WeatherActivity activity = (WeatherActivity) getActivity();
+                        activity.drawerLayout.closeDrawers();
+                        activity.swipeRefreshLayout.setRefreshing(true);
+                        activity.requesWeather(weatherId);
+                    }
                 }
             }
         });
@@ -98,10 +108,28 @@ public class ChooseAreaFragment extends Fragment {
         });
         queryProvinces();
     }
+    private void queryProvinces(){
+        titleText.setText("中国");
+        backButton.setVisibility(View.GONE);
+        provinceList = LitePal.findAll(Province.class);
+        if(provinceList.size()>0){
+            dataList.clear();
+            for(Province province:provinceList){
+                dataList.add(province.getprovinceName());
+            }
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
+            currentLevel = LEVEL_PROVINCE;
+        }
+        else{
+            String address = "http://guolin.tech/api/china";
+            queryFromServer(address,"province");
+        }
+    }
     private void queryCities(){
         titleText.setText(selectddProvince.getprovinceName());
         backButton.setVisibility(View.VISIBLE);
-        cityList = DataSupport.where("provinceid = ?",String.valueOf(selectddProvince.getId())).find(City.class);
+        cityList = LitePal.where("provinceid = ?",String.valueOf(selectddProvince.getId())).find(City.class);
         if(cityList.size()>0){
                 dataList.clear();
                 for(City city : cityList){
@@ -121,7 +149,7 @@ public class ChooseAreaFragment extends Fragment {
     private void queryCounties(){
         titleText.setText(selectedCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
-        countyList = DataSupport.where("cityid = ?",String.valueOf(selectedCity.getId())).find(County.class);
+        countyList = LitePal.where("cityid = ?",String.valueOf(selectedCity.getId())).find(County.class);
         if(countyList.size()>0){
             dataList.clear();
             for(County county:countyList){
@@ -141,24 +169,7 @@ public class ChooseAreaFragment extends Fragment {
     /*
     查询全国所有的省，有限从数据库查询，如果没有在到服务器上查询
     * */
-    private void queryProvinces(){
-        titleText.setText("中国");
-        backButton.setVisibility(View.GONE);
-        provinceList = DataSupport.findAll(Province.class);
-        if(provinceList.size()>0){
-            dataList.clear();
-            for(Province province:provinceList){
-                dataList.add(province.getprovinceName());
-            }
-            adapter.notifyDataSetChanged();
-            listView.setSelection(0);
-            currentLevel = LEVEL_PROVINCE;
-        }
-        else{
-            String address = "http://guolin.tech/api/china";
-            queryFromServer(address,"province");
-        }
-    }
+
     //根据传入的地址和数据类型从服务器上查询市县级数据
     private void queryFromServer(String address,final String type){
         showProgressDialog();

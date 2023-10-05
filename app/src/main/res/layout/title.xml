@@ -3,11 +3,20 @@
     android:layout_width="match_parent"
     android:layout_height="?attr/actionBarSize">
 
+<!--    <Button-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text = "返回按钮"-->
+<!--        android:id="@+id/back1_button"-->
+<!--        />-->
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text = "返回按钮"
-        android:id="@+id/back1_button"
+        android:id="@+id/nav_button"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginLeft="10dp"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:background="@drawable/ic_launcher_background"
         />
     <TextView
         android:id ="@+id/title_city"
